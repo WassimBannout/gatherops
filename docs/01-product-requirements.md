@@ -74,6 +74,19 @@ make test-integration
 # Local HTTP smoke test: register, login, me, refresh rotation, logout, rejected refresh reuse
 ```
 
+## Next Planned Slice
+
+The next implementation slice should move from authentication into organizations and membership management. That slice should primarily advance PRD-005 and PRD-006:
+
+- Create organizations for authenticated users.
+- Automatically make the creating user the organization owner.
+- List organizations the caller belongs to.
+- Add, remove, and change member roles according to owner-only authorization rules.
+- Keep role enforcement in service/policy code and back membership uniqueness with the existing database constraint.
+- Update OpenAPI, README examples, tests, and this PRD status section when the slice is complete.
+
+Out of scope for the next slice unless explicitly approved: event creation, RSVP behavior, audit-log endpoints, frontend UI, and CI hardening.
+
 ## Personas
 
 | Persona | Need | MVP Support |
