@@ -20,15 +20,44 @@ func TestLoadUsesDevelopmentDefaults(t *testing.T) {
 	if cfg.DatabaseURL != DefaultDatabaseURL {
 		t.Fatalf("DatabaseURL = %q, want default", cfg.DatabaseURL)
 	}
+	if cfg.JWTAccessSecret != DefaultJWTAccessSecret {
+		t.Fatalf("JWTAccessSecret = %q, want development default", cfg.JWTAccessSecret)
+	}
+	if cfg.AccessTokenTTL != 15*time.Minute {
+		t.Fatalf("AccessTokenTTL = %s, want 15m", cfg.AccessTokenTTL)
+	}
+	if cfg.RefreshTokenTTL != 30*24*time.Hour {
+		t.Fatalf("RefreshTokenTTL = %s, want 720h", cfg.RefreshTokenTTL)
+	}
 	if cfg.ReadinessTimeout != 2*time.Second {
 		t.Fatalf("ReadinessTimeout = %s, want 2s", cfg.ReadinessTimeout)
 	}
 }
 
+func TestLoadRequiresProductionSecrets(t *testing.T) {
+	_, err := load(mapLookup(map[string]string{
+		"APP_ENV":      "production",
+		"DATABASE_URL": "postgres://example",
+	}))
+	if err == nil {
+		t.Fatal("expected production config without JWT_ACCESS_SECRET to fail")
+	}
+}
+
 func TestLoadRequiresDatabaseURLInProduction(t *testing.T) {
-	_, err := load(mapLookup(map[string]string{"APP_ENV": "production"}))
+	_, err := load(mapLookup(map[string]string{
+		"APP_ENV":           "production",
+		"JWT_ACCESS_SECRET": "abcdefghijklmnopqrstuvwxyz1234567890",
+	}))
 	if err == nil {
 		t.Fatal("expected production config without DATABASE_URL to fail")
+	}
+}
+
+func TestLoadRejectsShortJWTSecret(t *testing.T) {
+	_, err := load(mapLookup(map[string]string{"JWT_ACCESS_SECRET": "too-short"}))
+	if err == nil {
+		t.Fatal("expected short JWT_ACCESS_SECRET to fail")
 	}
 }
 
@@ -37,6 +66,9 @@ func TestLoadParsesExplicitValues(t *testing.T) {
 		"APP_ENV":           "test",
 		"HTTP_PORT":         "9090",
 		"DATABASE_URL":      "postgres://example",
+		"JWT_ACCESS_SECRET": "abcdefghijklmnopqrstuvwxyz1234567890",
+		"ACCESS_TOKEN_TTL":  "10m",
+		"REFRESH_TOKEN_TTL": "168h",
 		"HTTP_READ_TIMEOUT": "3s",
 		"READINESS_TIMEOUT": "750ms",
 	}))
@@ -52,6 +84,12 @@ func TestLoadParsesExplicitValues(t *testing.T) {
 	}
 	if cfg.DatabaseURL != "postgres://example" {
 		t.Fatalf("DatabaseURL = %q, want explicit value", cfg.DatabaseURL)
+	}
+	if cfg.AccessTokenTTL != 10*time.Minute {
+		t.Fatalf("AccessTokenTTL = %s, want 10m", cfg.AccessTokenTTL)
+	}
+	if cfg.RefreshTokenTTL != 168*time.Hour {
+		t.Fatalf("RefreshTokenTTL = %s, want 168h", cfg.RefreshTokenTTL)
 	}
 	if cfg.HTTPReadTimeout != 3*time.Second {
 		t.Fatalf("HTTPReadTimeout = %s, want 3s", cfg.HTTPReadTimeout)

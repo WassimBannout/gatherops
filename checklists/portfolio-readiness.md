@@ -5,7 +5,7 @@
 - [ ] README explains what the project does in the first paragraph.
 - [ ] Quick start works from a fresh clone.
 - [x] Docker Compose starts dependencies.
-- [ ] API docs are easy to find.
+- [ ] API docs source exists at `docs/openapi.yaml`; hosted docs route remains pending.
 - [ ] Example API workflow is included.
 
 ## Engineering Signal

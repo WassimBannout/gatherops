@@ -9,7 +9,13 @@ import (
 	"time"
 )
 
-const DefaultDatabaseURL = "postgres://gatherops:gatherops@localhost:5433/gatherops?sslmode=disable"
+const (
+	DefaultDatabaseURL     = "postgres://gatherops:gatherops@localhost:5433/gatherops?sslmode=disable"
+	DefaultJWTAccessSecret = "development-only-change-me-gatherops-access-secret"
+	minimumJWTSecretLength = 32
+	defaultAccessTokenTTL  = 15 * time.Minute
+	defaultRefreshTokenTTL = 30 * 24 * time.Hour
+)
 
 type Config struct {
 	AppEnv           string
@@ -20,6 +26,9 @@ type Config struct {
 	HTTPIdleTimeout  time.Duration
 	ShutdownTimeout  time.Duration
 	ReadinessTimeout time.Duration
+	JWTAccessSecret  string
+	AccessTokenTTL   time.Duration
+	RefreshTokenTTL  time.Duration
 }
 
 func Load() (Config, error) {
@@ -38,6 +47,7 @@ type lookupFunc func(string) (string, bool)
 
 func load(lookup lookupFunc) (Config, error) {
 	appEnv := getString(lookup, "APP_ENV", "development")
+	isProduction := strings.EqualFold(appEnv, "production")
 
 	httpPort, err := getPort(lookup, "HTTP_PORT", 8080)
 	if err != nil {
@@ -47,10 +57,22 @@ func load(lookup lookupFunc) (Config, error) {
 	databaseURL, ok := lookup("DATABASE_URL")
 	databaseURL = strings.TrimSpace(databaseURL)
 	if !ok || databaseURL == "" {
-		if strings.EqualFold(appEnv, "production") {
+		if isProduction {
 			return Config{}, errors.New("DATABASE_URL is required when APP_ENV=production")
 		}
 		databaseURL = DefaultDatabaseURL
+	}
+
+	jwtAccessSecret, ok := lookup("JWT_ACCESS_SECRET")
+	jwtAccessSecret = strings.TrimSpace(jwtAccessSecret)
+	if !ok || jwtAccessSecret == "" {
+		if isProduction {
+			return Config{}, errors.New("JWT_ACCESS_SECRET is required when APP_ENV=production")
+		}
+		jwtAccessSecret = DefaultJWTAccessSecret
+	}
+	if len(jwtAccessSecret) < minimumJWTSecretLength {
+		return Config{}, fmt.Errorf("JWT_ACCESS_SECRET must be at least %d characters", minimumJWTSecretLength)
 	}
 
 	readTimeout, err := getDuration(lookup, "HTTP_READ_TIMEOUT", 5*time.Second)
@@ -73,6 +95,14 @@ func load(lookup lookupFunc) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	accessTokenTTL, err := getDuration(lookup, "ACCESS_TOKEN_TTL", defaultAccessTokenTTL)
+	if err != nil {
+		return Config{}, err
+	}
+	refreshTokenTTL, err := getDuration(lookup, "REFRESH_TOKEN_TTL", defaultRefreshTokenTTL)
+	if err != nil {
+		return Config{}, err
+	}
 
 	return Config{
 		AppEnv:           appEnv,
@@ -83,6 +113,9 @@ func load(lookup lookupFunc) (Config, error) {
 		HTTPIdleTimeout:  idleTimeout,
 		ShutdownTimeout:  shutdownTimeout,
 		ReadinessTimeout: readinessTimeout,
+		JWTAccessSecret:  jwtAccessSecret,
+		AccessTokenTTL:   accessTokenTTL,
+		RefreshTokenTTL:  refreshTokenTTL,
 	}, nil
 }
 

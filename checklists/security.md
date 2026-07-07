@@ -2,12 +2,12 @@
 
 ## Auth
 
-- [ ] Access tokens include `exp`.
-- [ ] Expired access tokens are rejected.
-- [ ] Malformed tokens return 401 without panic.
-- [ ] Refresh tokens are stored hashed.
-- [ ] Logout revokes refresh tokens.
-- [ ] Password hash never appears in API output.
+- [x] Access tokens include `exp`.
+- [x] Expired access tokens are rejected.
+- [x] Malformed tokens return 401 without panic.
+- [x] Refresh tokens are stored hashed.
+- [x] Logout revokes refresh tokens.
+- [x] Password hash never appears in API output.
 
 ## Authorization
 
@@ -22,7 +22,7 @@
 - [ ] Pagination limits are bounded.
 - [ ] Date ranges are validated.
 - [ ] Enum values are validated.
-- [ ] Duplicate resources return 409.
+- [x] Duplicate user email returns 409.
 
 ## Database
 
@@ -33,7 +33,7 @@
 
 ## Ops
 
-- [ ] Production secrets have no unsafe defaults.
+- [x] Production secrets have no unsafe defaults.
 - [ ] CORS origins are configurable.
 - [ ] Logs do not include passwords or tokens.
 - [ ] Health/readiness endpoints do not leak secrets.

@@ -33,7 +33,12 @@ func main() {
 	}
 	defer db.Close()
 
-	server := app.NewHTTPServer(cfg, app.NewHandler(cfg, db))
+	handler, err := app.NewHandler(cfg, db)
+	if err != nil {
+		logger.Error("create http handler", "error", err)
+		os.Exit(1)
+	}
+	server := app.NewHTTPServer(cfg, handler)
 	serverErrors := make(chan error, 1)
 
 	go func() {

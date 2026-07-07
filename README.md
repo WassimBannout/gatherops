@@ -6,7 +6,7 @@ The target project is inspired by a small Go/Gin event REST API, but it is desig
 
 ## Current Implementation Status
 
-Phase 2 database foundation is bootstrapped:
+Phase 3 authentication and users are implemented:
 
 - Go module and API entrypoint.
 - Explicit environment-based config loader.
@@ -18,9 +18,11 @@ Phase 2 database foundation is bootstrapped:
 - PostgreSQL Docker Compose service.
 - Reversible `golang-migrate` migration for users, refresh tokens, organizations, members, events, RSVPs, and audit logs.
 - Database constraints for normalized emails, unique slugs, membership uniqueness, event state, RSVP uniqueness, enum-like status values, and audit metadata shape.
-- Domain types plus repository interfaces and a Postgres store skeleton.
-- Makefile targets for local development, migration commands, unit tests, vet, and integration migration tests.
-- Initial OpenAPI spec for operational endpoints.
+- Domain types, repository interfaces, and concrete Postgres repositories for users and refresh tokens.
+- `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, and `GET /api/v1/me`.
+- Bcrypt password hashing, JWT access tokens with required `exp` and `sub`, opaque refresh tokens stored hashed at rest, refresh rotation, and logout revocation.
+- Makefile targets for local development, migration commands, unit tests, vet, and integration migration/repository tests.
+- OpenAPI spec for operational and authentication endpoints.
 
 ## Quick Start
 
@@ -43,12 +45,22 @@ Run the API:
 make run
 ```
 
-Check the skeleton endpoints:
+Check the operational endpoints:
 
 ```bash
 curl http://localhost:8080/healthz
 curl http://localhost:8080/readyz
 ```
+
+Try the auth flow:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Ada Lovelace","email":"ada@example.com","password":"correct-password"}'
+```
+
+Use the returned `accessToken` as a bearer token for `GET /api/v1/me`, and use the returned `refreshToken` with `POST /api/v1/auth/refresh` or authenticated `POST /api/v1/auth/logout`.
 
 Run verification:
 
@@ -98,6 +110,9 @@ The final implementation should show that the developer can build and reason abo
 | `HTTP_IDLE_TIMEOUT` | `60s` | Maximum idle keep-alive duration. |
 | `SHUTDOWN_TIMEOUT` | `10s` | Graceful shutdown timeout. |
 | `READINESS_TIMEOUT` | `2s` | Database readiness ping timeout. |
+| `JWT_ACCESS_SECRET` | Development-only local secret | HMAC secret for JWT access tokens. Required in production and must be at least 32 characters. |
+| `ACCESS_TOKEN_TTL` | `15m` | Access token lifetime. |
+| `REFRESH_TOKEN_TTL` | `720h` | Refresh token lifetime. |
 | `TEST_DATABASE_URL` | Local Docker Compose PostgreSQL URL on port `5433` | Optional database URL for integration tests. |
 
 ## API Shape
@@ -108,6 +123,16 @@ Operational endpoints are available at the root path:
 | --- | --- | --- |
 | `GET` | `/healthz` | Returns `200` when the process is alive. |
 | `GET` | `/readyz` | Returns `200` when PostgreSQL is reachable, otherwise `503`. |
+
+Authentication endpoints are available under `/api/v1`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/auth/register` | Create an account and issue access/refresh tokens. |
+| `POST` | `/api/v1/auth/login` | Exchange email/password for access/refresh tokens. |
+| `POST` | `/api/v1/auth/refresh` | Rotate a refresh token and issue a new session. |
+| `POST` | `/api/v1/auth/logout` | Revoke a refresh token; requires bearer access token. |
+| `GET` | `/api/v1/me` | Return the authenticated user's profile. |
 
 Errors use the documented envelope:
 
@@ -138,7 +163,7 @@ Keep the planning files unless a deliberate ADR changes them. They are part of t
 
 ## Known Limitations
 
-- Product endpoints for auth, organizations, events, RSVP workflows, and audit logs are not implemented yet.
-- Repository implementations currently stop at interfaces and a Postgres store skeleton; concrete query methods start in the auth slice.
-- The OpenAPI spec currently covers only the operational endpoints.
-- A hosted API docs UI route will be added in a later documentation slice.
+- Organization, event, RSVP, attendee, and audit-log product endpoints are not implemented yet.
+- Rate limiting for auth-sensitive endpoints is not implemented yet.
+- The API docs UI route is not served yet; the OpenAPI source lives at `docs/openapi.yaml`.
+- Refresh tokens rotate on refresh and can be revoked on logout, but session listing and revoke-all-devices behavior are not implemented.

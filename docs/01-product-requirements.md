@@ -25,40 +25,43 @@ Small teams need a lightweight way to publish events, manage RSVPs, enforce capa
 
 ## Current Implementation Status
 
-As of July 7, 2026, GatherOps has completed the Phase 2 database foundation. The current implementation has a working API skeleton plus the core PostgreSQL schema, but it is not yet the full MVP product workflow.
+As of July 8, 2026, GatherOps has completed the Phase 3 authentication and users slice. The current implementation has a working API skeleton, core PostgreSQL schema, and secure account/session endpoints. Organization, event, RSVP, and audit workflows remain future slices.
 
 Implemented:
 
 - Go module, API entrypoint, and internal package layout.
-- Environment-based configuration with safe local defaults and production database URL enforcement.
+- Environment-based configuration with safe local defaults and production database/JWT secret enforcement.
 - HTTP server wiring with read, write, idle, and graceful shutdown timeouts.
 - `chi` router with request IDs and recovery middleware.
 - `GET /healthz` process health endpoint.
 - `GET /readyz` database readiness endpoint backed by PostgreSQL ping.
-- Consistent JSON error response envelope for readiness failures.
+- Consistent JSON error response envelope.
 - Docker Compose PostgreSQL service for local development.
-- `.env.example`, Makefile targets, and README quick start instructions.
 - Reversible `golang-migrate` migration for the core schema.
 - Database constraints and indexes for users, refresh tokens, organizations, members, events, RSVPs, and audit logs.
-- Domain types, repository interfaces, and a Postgres store skeleton.
-- Initial OpenAPI 3.1 file covering the operational endpoints.
-- Focused tests for config loading, operational HTTP behavior, migration URL construction, and Docker-backed migration smoke coverage.
+- Domain types, repository interfaces, concrete Postgres repositories for users and refresh tokens, and a Postgres store skeleton.
+- `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, and `GET /api/v1/me`.
+- Bcrypt password hashing, JWT access tokens with required `exp` and `sub`, opaque refresh tokens stored hashed at rest, refresh rotation, and logout revocation.
+- OpenAPI 3.1 file covering operational and auth endpoints.
+- Unit, handler, service, security, Docker-backed integration tests, and a local HTTP auth smoke test for the implemented behavior.
 
 Requirement progress:
 
 | Requirement | Current Status |
 | --- | --- |
-| PRD-001 | Schema support started. `users.email` is unique and normalized by database constraint, but registration is not implemented. |
-| PRD-002 through PRD-004 | Schema support started for refresh tokens, but login, token issuing, hashing, refresh, and logout flows are not implemented. |
+| PRD-001 | Implemented. Registration normalizes email, database enforces uniqueness, and duplicate emails return 409. |
+| PRD-002 | Implemented. Login uses normalized email and bcrypt password comparison with a generic invalid-credentials error. |
+| PRD-003 | Implemented. Access tokens are short-lived JWTs with required `sub`, `iat`, and `exp` claims. |
+| PRD-004 | Implemented. Refresh tokens are opaque random values; only SHA-256 hashes are stored. Refresh rotates tokens and logout revokes them. |
 | PRD-005 through PRD-006 | Schema support started for organizations and membership roles, but organization APIs and role policies are not implemented. |
 | PRD-007 through PRD-010 | Schema support started for events and RSVPs, including status, time-range, capacity, and uniqueness constraints. Event and RSVP APIs are not implemented. |
 | PRD-011 | Schema support started for audit logs, but audit writes and audit APIs are not implemented. |
-| PRD-012 | Partially started. An OpenAPI file exists for operational endpoints, but a hosted API docs route and full product contract are not implemented yet. |
-| PRD-013 | Implemented for Phase 1. `/healthz` returns process health and `/readyz` checks PostgreSQL connectivity. |
-| PRD-014 | Implemented for Phase 1. Docker Compose starts local PostgreSQL, defaulting to host port `5433`. |
+| PRD-012 | Partially implemented. OpenAPI covers operational and auth endpoints, but a hosted API docs route and full product contract are not implemented yet. |
+| PRD-013 | Implemented. `/healthz` returns process health and `/readyz` checks PostgreSQL connectivity. |
+| PRD-014 | Implemented. Docker Compose starts local PostgreSQL, defaulting to host port `5433`. |
 | PRD-015 | Not started. CI will be added during the hardening/docs phase. |
 
-Latest local verification for this foundation slice passed:
+Latest local verification for this auth slice passed:
 
 ```bash
 go test ./...
@@ -68,8 +71,7 @@ make lint
 make openapi-check
 make docker-up
 make test-integration
-make migrate-up
-make migrate-down
+# Local HTTP smoke test: register, login, me, refresh rotation, logout, rejected refresh reuse
 ```
 
 ## Personas
