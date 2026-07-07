@@ -74,6 +74,35 @@ make test-integration
 # Local HTTP smoke test: register, login, me, refresh rotation, logout, rejected refresh reuse
 ```
 
+## Implemented API Surface
+
+The current runnable API surface is intentionally limited to operational and authentication endpoints:
+
+| Method | Path | Status |
+| --- | --- | --- |
+| `GET` | `/healthz` | Implemented. Returns process health. |
+| `GET` | `/readyz` | Implemented. Checks PostgreSQL connectivity. |
+| `POST` | `/api/v1/auth/register` | Implemented. Creates a user, hashes the password, and issues access/refresh tokens. |
+| `POST` | `/api/v1/auth/login` | Implemented. Authenticates by normalized email and password. |
+| `POST` | `/api/v1/auth/refresh` | Implemented. Rotates a valid refresh token and issues a new session. |
+| `POST` | `/api/v1/auth/logout` | Implemented. Requires a bearer access token and revokes the submitted refresh token. |
+| `GET` | `/api/v1/me` | Implemented. Requires a bearer access token and returns the caller profile. |
+
+No organization, event, RSVP, attendee, audit-log, or hosted docs endpoints are implemented yet.
+
+## MVP Acceptance Criteria Status
+
+| Acceptance Criterion | Current Status |
+| --- | --- |
+| Protected endpoints reject missing, expired, malformed, or invalid tokens. | Implemented for `POST /api/v1/auth/logout` and `GET /api/v1/me`; remaining protected product endpoints are not built yet. |
+| Users cannot mutate organizations they do not belong to. | Pending organization slice. |
+| Members cannot perform owner-only actions. | Pending organization slice. |
+| Events cannot exceed capacity without waitlisting. | Pending RSVP slice. |
+| Duplicate RSVPs are prevented by database constraints. | Schema support implemented; RSVP API behavior pending. |
+| List endpoints use limit/offset or cursor pagination. | Pending product list endpoints. |
+| API errors use a consistent JSON shape. | Implemented for current operational and auth endpoints. |
+| Tests cover success, validation errors, authentication errors, and authorization errors. | Implemented for current auth scope; organization/event/RSVP authorization tests pending those slices. |
+
 ## Next Planned Slice
 
 The next implementation slice should move from authentication into organizations and membership management. That slice should primarily advance PRD-005 and PRD-006:
