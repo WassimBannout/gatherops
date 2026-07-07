@@ -1,0 +1,34 @@
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and local env
+*.log
+.env
+.env.*
+!.env.example
+
+# Generated build artifacts for the future implementation
+bin/
+dist/
+build/
+coverage/
+coverage.out
+.tmp/
+tmp/
+
+# Go artifacts for the future implementation
+*.test
+*.prof
+
+# Node artifacts if a web client is added later
+node_modules/
+.next/
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3

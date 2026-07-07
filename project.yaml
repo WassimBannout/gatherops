@@ -1,0 +1,37 @@
+project:
+  name: GatherOps
+  type: backend_portfolio_project
+  purpose: Demonstrate production-minded software engineering using Go, PostgreSQL, REST APIs, tests, documentation, and deployment-ready practices.
+  inspiration:
+    - Simple Go Gin event REST API with users, events, attendees, JWT auth, SQLite, migrations, and Swagger.
+  not_a_clone: true
+
+ai_native_workflow:
+  principle: Requirements, architecture, tests, implementation, verification, and documentation should move together.
+  build_mode: phased_vertical_slices
+  codex_role: senior_pair_programmer_and_implementation_agent
+  human_role: product_owner_and_final_reviewer
+
+recommended_stack:
+  language: Go
+  go_version: '1.23+'
+  router: chi
+  database: PostgreSQL
+  db_driver: pgx
+  migrations: golang-migrate
+  query_strategy: sqlc preferred, handwritten pgx acceptable with justification
+  auth: JWT access tokens plus hashed refresh tokens
+  password_hashing: bcrypt or argon2id
+  api_docs: OpenAPI 3.1
+  local_dev: Docker Compose
+  ci: GitHub Actions
+  tests:
+    - unit
+    - integration
+    - handler
+    - contract
+
+portfolio_signal:
+  primary: backend engineering quality
+  secondary: product thinking and architecture communication
+  optional_extension: small frontend dashboard after backend is complete

@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS rsvps;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS organization_members;
+DROP TABLE IF EXISTS organizations;
+DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS users;
+DROP FUNCTION IF EXISTS set_updated_at();
